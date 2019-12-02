@@ -225,7 +225,7 @@ class TaskController extends Controller
     {        
         $validator = Validator::make($request->all(),
             [
-                'title' => 'alpha',
+                'title' => 'alpha_num',
                 'priority'   => 'integer|between:1,5',
                 'status' => 'in:todo,done',
                 'sort' => 'in:priority,created_at,completed_at'
