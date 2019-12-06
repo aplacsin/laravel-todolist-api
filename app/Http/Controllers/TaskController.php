@@ -22,10 +22,8 @@ class TaskController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
-    {
-        $tasks = new Task;
-        $tasks = $tasks->with('subtask')->where('parent_id', 0);
-        $tasks = $tasks->get();
+    {        
+        $tasks = Task::whereNull('parent_id')->with('subtask')->get();
 
         $success['status'] = "success";
         $success['task'] = $tasks;        
@@ -53,8 +51,7 @@ class TaskController extends Controller
             return response()->json(["validation_errors" => $validator->errors()]);
         }
 
-        $taskInput = array(
-            'parent_id' => 0,
+        $taskInput = array(            
             'title' => $request->title,
             'description' => $request->description,
             'priority' => $request->priority,            
@@ -106,7 +103,7 @@ class TaskController extends Controller
         $inputData = array(
             'title' => $request->title,
             'description' => $request->description,
-            'priority' => $request->priority,   
+            'priority' => $request->priority,
         );
 
         $count = Task::where('status', 'done')->where('id', $id)->count();
@@ -135,17 +132,17 @@ class TaskController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
-    {        
+    {
         $count = Task::where('status', 'done')->where('id', $id)->count();
         
         if ($count == 0) {
             $tasks = Task::findOrFail($id);
 
-            if(!is_null($tasks)) {  
-                $response = Task::where('id', $id)->delete();
+            if(!is_null($tasks)) {
+                $response = Task::where('id', $id)->first()->delete();
                 if($response == 1) {
                     $success['status'] = 'success';
-                    $success['message'] = 'Task has been deleted successfully'; 
+                    $success['message'] = 'Task has been deleted successfully';
                 }
             }
         } else {
@@ -200,6 +197,7 @@ class TaskController extends Controller
     /* Completed Tasks */
     public function completed($id)
     {
+        /* Counter of outstanding subtasks */
         $count = Task::where('status', 'todo')->where('parent_id', $id)->count();
         
         if ($count == 0) {
@@ -228,7 +226,8 @@ class TaskController extends Controller
                 'title' => 'alpha_num',
                 'priority'   => 'integer|between:1,5',
                 'status' => 'in:todo,done',
-                'sort' => 'in:priority,created_at,completed_at'
+                'sort' => 'in:priority,created_at,completed_at',
+                'method_sort' => 'in:asc,desc',
             ]
         );
 
@@ -240,9 +239,9 @@ class TaskController extends Controller
         $priority = $request->priority;
         $status = $request->status;
         $sort = $request->sort;
-
-        $tasks = new Task;
-        $tasks = $tasks->with('subtask')->where('parent_id', 0);
+        $method = $request->method_sort;
+               
+        $tasks = Task::whereNull('parent_id')->with('subtask');
 
         if ($request->has('title')) {
             $tasks->whereRaw("MATCH(title) AGAINST('{$title}' IN BOOLEAN MODE)");
@@ -257,7 +256,7 @@ class TaskController extends Controller
         }
 
         if ($request->has('sort')) {
-            $tasks->orderBy("{$sort}", 'asc');
+            $tasks->orderBy("{$sort}", "{$method}");
         }
 
         $tasks = $tasks->get();

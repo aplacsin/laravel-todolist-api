@@ -12,12 +12,12 @@ class Task extends Model
 
     public function task()
 {
-    return $this->belongsTo('App\Task','parent_id')->where('parent_id',0)->with('task');
+    return $this->hasMany('App\Task', 'parent_id');
 }
 
 public function subtask()
 {
-    return $this->hasMany('App\Task','parent_id')->with('subtask');
+    return $this->hasMany('App\Task', 'parent_id')->with('subtask');
 }
     
 }
